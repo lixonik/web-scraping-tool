@@ -1,0 +1,9 @@
+class PlaywrightContext {
+  constructor() {
+
+  }
+
+  highlight() {
+    
+  }
+}
