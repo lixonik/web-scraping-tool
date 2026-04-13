@@ -18,19 +18,21 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@types/pdfmake": "^0.3.2",
+    "pdfmake": "^0.3.7",
     "playwright-core": "1.58.2"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "2.0.0",
+    "@playwright/test": "1.58.2",
     "@types/node": "20.19.37",
     "electron": "41.0.4",
-    "@playwright/test": "1.58.2",
     "electron-builder": "26.8.1",
     "electron-vite": "5.0.0",
     "typescript": "5.9.3",
     "vite": "7.3.1",
-    "vue-tsc": "3.2.6",
-    "vite-node": "6.0.0"
+    "vite-node": "6.0.0",
+    "vue-tsc": "3.2.6"
   },
   "engines": {
     "node": ">=20.19.0"

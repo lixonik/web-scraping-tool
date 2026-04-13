@@ -7,6 +7,8 @@ import {
   runPlaywrightHandledPageData,
   runPlaywrightToolWindow,
 } from './run-playwright';
+import { saveLocatorData } from './save-element';
+import { attachCDPNetworkLogger, NetworkLoggerHandle } from './cdp-network-logger';
 import { Browser, Page } from 'playwright-core';
 
 let handledBrowserWindow: BrowserWindow | null = null;
@@ -15,6 +17,7 @@ let playwrightHandledPageData: {
   handledPage: Page;
   browser: Browser;
 } | null = null;
+let networkLoggerHandle: NetworkLoggerHandle | null = null;
 
 const distServerPort = 3001;
 const distServerUrl = `http://localhost:${distServerPort}`;
@@ -104,6 +107,10 @@ app.whenReady().then(async () => {
   ipcMain.on(
     'open-new-tab',
     async (event: Electron.IpcMainEvent, url: string) => {
+      if (networkLoggerHandle) {
+        networkLoggerHandle.stop();
+        networkLoggerHandle = null;
+      }
       if (handledBrowserWindow !== null) {
         handledBrowserWindow.close();
       }
@@ -118,12 +125,50 @@ app.whenReady().then(async () => {
   ipcMain.on(
     'on-send-locator',
     async (event: Electron.IpcMainEvent, locator: string) => {
-      playwrightHandledPageData?.handledPage.locator(locator).highlight();
-      playwrightHandledPageData?.handledPage
-        .locator(locator)
-        .screenshot({ path: '../../output-screen.jpeg', type: 'jpeg' });
+      const page = playwrightHandledPageData?.handledPage ?? toolPage;
+      if (!page) {
+        console.log('No page available — run playwright or open a tab first');
+        return;
+      }
+      try {
+        const loc = page.locator(locator);
+        loc.highlight();
+        const savedDir = await saveLocatorData(loc, locator);
+        console.log('Element saved to:', savedDir);
+      } catch (err) {
+        console.error('Failed to save locator data:', err);
+      }
     },
   );
+
+  ipcMain.on(
+    'start-network-logging',
+    async (event: Electron.IpcMainEvent, resourceTypes?: string[]) => {
+      const page = playwrightHandledPageData?.handledPage ?? toolPage;
+      if (!page) {
+        console.log('No page available — run playwright or open a tab first');
+        return;
+      }
+      if (networkLoggerHandle) {
+        networkLoggerHandle.stop();
+        networkLoggerHandle = null;
+      }
+      networkLoggerHandle = await attachCDPNetworkLogger(
+        page,
+        (resourceTypes as any) ?? ['All'],
+      );
+    },
+  );
+
+  ipcMain.on('stop-network-logging', () => {
+    if (networkLoggerHandle) {
+      networkLoggerHandle.stop();
+      console.log('Network logging stopped');
+      networkLoggerHandle = null;
+    } else {
+      console.log('No active network logger');
+    }
+  });
 
   await createWindow();
   // await createWin2()

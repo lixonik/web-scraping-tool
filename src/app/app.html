@@ -1,0 +1,51 @@
+<div class="panel">
+  <nz-divider nzText="Browser" nzOrientation="left"></nz-divider>
+
+  <div class="section">
+    <button nz-button nzType="primary" (click)="runPlaywright()">
+      Run Playwright
+    </button>
+    <nz-input-search
+      nzSearchButton
+      nzEnterButton="Open"
+      (nzSearch)="onOpen($event)"
+    >
+      <input
+        nz-input
+        [(ngModel)]="linkForSecondTab"
+        placeholder="URL to open in new tab"
+      />
+    </nz-input-search>
+  </div>
+
+  <nz-divider nzText="Element" nzOrientation="left"></nz-divider>
+
+  <div class="section">
+    <nz-input-search
+      nzSearchButton
+      nzEnterButton="Locate"
+      (nzSearch)="onSendLocator($event)"
+    >
+      <input nz-input placeholder="CSS locator" />
+    </nz-input-search>
+  </div>
+
+  <nz-divider nzText="Tools" nzOrientation="left"></nz-divider>
+
+  <div class="section">
+    <button nz-button (click)="screen()">Screenshot</button>
+    <button nz-button (click)="testHttpProxy()">Test HTTP Proxy</button>
+    <button
+      nz-button
+      [nzType]="isNetworkLogging ? 'default' : 'primary'"
+      [nzDanger]="isNetworkLogging"
+      (click)="toggleNetworkLogging()"
+    >
+      {{
+        isNetworkLogging ? 'Stop Network Logging' : 'Start Network Logging'
+      }}
+    </button>
+  </div>
+
+  <!-- <router-outlet></router-outlet> -->
+</div>

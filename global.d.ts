@@ -8,6 +8,8 @@ declare global {
       runPl: () => void;
       onSendLocator: (locator: string) => void;
       fetchLocalHost: () => void;
+      startNetworkLogging: (resourceTypes?: string[]) => void;
+      stopNetworkLogging: () => void;
     };
   }
 }

@@ -16,6 +16,7 @@ yarn-error.log
 # IDEs and editors
 .idea/
 .project
+.claude/
 .classpath
 .c9/
 *.launch
@@ -40,6 +41,9 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+
+# Output
+/output
 
 # System files
 .DS_Store

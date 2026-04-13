@@ -17,6 +17,12 @@ const api = {
   },
   fetchLocalHost: () => {
     ipcRenderer.send('fetch-local-host')
+  },
+  startNetworkLogging: (resourceTypes?: string[]) => {
+    ipcRenderer.send('start-network-logging', resourceTypes);
+  },
+  stopNetworkLogging: () => {
+    ipcRenderer.send('stop-network-logging');
   }
 } satisfies Window['api'];
 
