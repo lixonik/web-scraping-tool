@@ -23,7 +23,29 @@ const api = {
   },
   stopNetworkLogging: () => {
     ipcRenderer.send('stop-network-logging');
-  }
+  },
+  startConsoleLogging: () => {
+    ipcRenderer.send('start-console-logging');
+  },
+  stopConsoleLogging: () => {
+    ipcRenderer.send('stop-console-logging');
+  },
+  onLoggerLine: (
+    cb: (data: { source: 'network' | 'console'; line: string }) => void,
+  ) => {
+    const listener = (_e: Electron.IpcRendererEvent, data: { source: 'network' | 'console'; line: string }) => cb(data);
+    ipcRenderer.on('logger:line', listener);
+    return () => {
+      ipcRenderer.removeListener('logger:line', listener);
+    };
+  },
+  onHandledPageStatus: (cb: (data: { ready: boolean }) => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, data: { ready: boolean }) => cb(data);
+    ipcRenderer.on('handled-page:status', listener);
+    return () => {
+      ipcRenderer.removeListener('handled-page:status', listener);
+    };
+  },
 } satisfies Window['api'];
 
 // Use `contextBridge` APIs to expose Electron APIs to

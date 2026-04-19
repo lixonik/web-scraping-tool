@@ -20,7 +20,7 @@ export type NetworkResourceType =
 export type LoggableNetworkResourceType = 'All' | NetworkResourceType;
 
 const MAX_BODY_LENGTH = 10_000;
-const LOG_DIR = join(__dirname, '../../../output/logs');
+const LOG_DIR = join(__dirname, '../../../output/logs/network');
 
 export interface NetworkLoggerHandle {
   stop: () => void;
@@ -30,10 +30,11 @@ export interface NetworkLoggerHandle {
 export async function attachCDPNetworkLogger(
   page: Page,
   resourceTypes: LoggableNetworkResourceType[] = ['All'],
+  onLog?: (line: string) => void,
 ): Promise<NetworkLoggerHandle> {
   mkdirSync(LOG_DIR, { recursive: true });
 
-  const logFilePath = join(LOG_DIR, `network_${formatDateLocal(new Date())}.log`);
+  const logFilePath = join(LOG_DIR, `${formatDateLocal(new Date())}.log`);
 
   const client = await page.context().newCDPSession(page);
   await client.send('Network.enable');
@@ -43,7 +44,9 @@ export async function attachCDPNetworkLogger(
 
   const log = (line: string) => {
     if (stopped) return;
-    appendFileSync(logFilePath, `[${formatDateISO(new Date())}] ${line}\n`);
+    const formatted = `[${formatDateISO(new Date())}] ${line}`;
+    appendFileSync(logFilePath, `${formatted}\n`);
+    onLog?.(formatted);
   };
 
   const shouldLog = (type: string): boolean => {

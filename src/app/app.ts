@@ -1,57 +1,91 @@
 ///<reference path='../../global.d.ts'/>
-import { RouterOutlet } from '@angular/router';
-import { Component, inject, model } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { NzInputModule, NzInputSearchEvent } from 'ng-zorro-antd/input';
+import {
+  Component,
+  NgZone,
+  OnDestroy,
+  OnInit,
+  inject,
+  model,
+} from '@angular/core';
+import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzSpaceModule } from 'ng-zorro-antd/space';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { TerminalComponent } from './terminal/terminal.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
-    // RouterOutlet,
     NzInputModule,
     NzButtonModule,
     NzDividerModule,
     NzSpaceModule,
+    NzTooltipModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    TerminalComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
-  http = inject(HttpClient);
+export class App implements OnInit, OnDestroy {
+  private zone = inject(NgZone);
   linkForSecondTab = model<string>('');
+  readonly openHandledWindowHint = 'Open handled window first';
 
-  testHttpProxy() {
-    this.http.get('test-http', { responseType: 'text' }).subscribe((data) => {
-      console.log('+++++++++++++++ data from test playwright proxy', data);
+  isHandledPageReady = false;
+  isNetworkLogging = false;
+  isConsoleLogging = false;
+  locatorValue = '';
+
+  get isValidUrl(): boolean {
+    const v = this.linkForSecondTab();
+    if (!v) return false;
+    try {
+      const u = new URL(v);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+
+  get canLocate(): boolean {
+    return this.isHandledPageReady && this.locatorValue.trim().length > 0;
+  }
+
+  private unsubscribeStatus?: () => void;
+
+  ngOnInit(): void {
+    this.unsubscribeStatus = window.api.onHandledPageStatus(({ ready }) => {
+      // IPC-callback прилетает вне Angular-зоны — без zone.run() change detection не сработает
+      this.zone.run(() => {
+        this.isHandledPageReady = ready;
+        if (!ready) {
+          this.isNetworkLogging = false;
+          this.isConsoleLogging = false;
+        }
+      });
     });
   }
 
-  screen() {
-    console.dirxml('screen');
+  ngOnDestroy(): void {
+    this.unsubscribeStatus?.();
   }
 
-  runPlaywright() {
-    window.api.runPl();
+  onOpen() {
+    if (!this.isValidUrl) return;
+    window.api.openNewTab(this.linkForSecondTab() || '');
   }
 
-  onOpen(event: NzInputSearchEvent) {
-    window.api.openNewTab(event.value);
+  onSendLocator() {
+    if (!this.canLocate) return;
+    window.api.onSendLocator(this.locatorValue);
   }
-
-  onSendLocator(event: NzInputSearchEvent) {
-    window.api.onSendLocator(event.value);
-  }
-
-  isNetworkLogging = false;
 
   toggleNetworkLogging() {
     if (this.isNetworkLogging) {
@@ -60,5 +94,14 @@ export class App {
       window.api.startNetworkLogging();
     }
     this.isNetworkLogging = !this.isNetworkLogging;
+  }
+
+  toggleConsoleLogging() {
+    if (this.isConsoleLogging) {
+      window.api.stopConsoleLogging();
+    } else {
+      window.api.startConsoleLogging();
+    }
+    this.isConsoleLogging = !this.isConsoleLogging;
   }
 }

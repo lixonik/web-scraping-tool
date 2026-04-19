@@ -1,0 +1,9 @@
+<div class="terminal-wrapper">
+  <div class="toolbar">
+    <label nz-checkbox [(ngModel)]="showNetwork">Network</label>
+    <label nz-checkbox [(ngModel)]="showConsole">Console</label>
+    <span class="spacer"></span>
+    <button nz-button nzSize="small" (click)="clear()">Clear</button>
+  </div>
+  <div #host class="term-host"></div>
+</div>

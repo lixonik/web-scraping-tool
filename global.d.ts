@@ -10,6 +10,14 @@ declare global {
       fetchLocalHost: () => void;
       startNetworkLogging: (resourceTypes?: string[]) => void;
       stopNetworkLogging: () => void;
+      startConsoleLogging: () => void;
+      stopConsoleLogging: () => void;
+      onLoggerLine: (
+        cb: (data: { source: 'network' | 'console'; line: string }) => void,
+      ) => () => void;
+      onHandledPageStatus: (
+        cb: (data: { ready: boolean }) => void,
+      ) => () => void;
     };
   }
 }

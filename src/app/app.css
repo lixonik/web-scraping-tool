@@ -1,16 +1,18 @@
 :host {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   padding: 24px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .panel {
   display: flex;
   flex-direction: column;
   flex: 1;
-  justify-content: center;
+  min-height: 0;
+  justify-content: flex-start;
   max-width: 100%;
 }
 
@@ -21,6 +23,22 @@
   gap: 12px;
 }
 
-.section nz-input-search {
+.section.grow {
+  flex: 1;
+  min-height: 0;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.section nz-input-search,
+.section .grow-input {
   flex: 1 1 250px;
+}
+
+.tooltip-wrap {
+  display: inline-flex;
+}
+
+.tooltip-wrap > input[nz-input] {
+  width: 100%;
 }

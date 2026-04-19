@@ -9,6 +9,7 @@ import {
 } from './run-playwright';
 import { saveLocatorData } from './save-element';
 import { attachCDPNetworkLogger, NetworkLoggerHandle } from './cdp-network-logger';
+import { attachConsoleLogger, ConsoleLoggerHandle } from './console-logger';
 import { Browser, Page } from 'playwright-core';
 
 let handledBrowserWindow: BrowserWindow | null = null;
@@ -18,6 +19,7 @@ let playwrightHandledPageData: {
   browser: Browser;
 } | null = null;
 let networkLoggerHandle: NetworkLoggerHandle | null = null;
+let consoleLoggerHandle: ConsoleLoggerHandle | null = null;
 
 const distServerPort = 3001;
 const distServerUrl = `http://localhost:${distServerPort}`;
@@ -25,6 +27,20 @@ const distServerUrl = `http://localhost:${distServerPort}`;
 const DEBUG_PORT = 9222;
 // running browser args
 app.commandLine.appendSwitch('remote-debugging-port', String(DEBUG_PORT));
+
+// Подавляем фоновые HTTPS-запросы Chromium к сервисам Google (component updater,
+// safe browsing, translate и т.п.) — это источник periodic SSL handshake ошибок
+// в stderr при запуске, никак не связанный с целевыми страницами.
+app.commandLine.appendSwitch('disable-background-networking');
+app.commandLine.appendSwitch('disable-component-update');
+app.commandLine.appendSwitch('disable-default-apps');
+app.commandLine.appendSwitch('disable-features', 'OptimizationHints,Translate,MediaRouter');
+
+// На всякий случай: разрешаем самоподписанные/проблемные сертификаты целевых страниц
+app.on('certificate-error', (event, _webContents, _url, _error, _cert, callback) => {
+  event.preventDefault();
+  callback(true);
+});
 
 async function createWin2(url: string) {
   const win2 = new BrowserWindow({
@@ -111,6 +127,10 @@ app.whenReady().then(async () => {
         networkLoggerHandle.stop();
         networkLoggerHandle = null;
       }
+      if (consoleLoggerHandle) {
+        consoleLoggerHandle.stop();
+        consoleLoggerHandle = null;
+      }
       if (handledBrowserWindow !== null) {
         handledBrowserWindow.close();
       }
@@ -119,6 +139,27 @@ app.whenReady().then(async () => {
         playwrightHandledPageData.browser.close();
       }
       playwrightHandledPageData = await runPlaywrightHandledPageData(url);
+
+      const sender = event.sender;
+      if (!sender.isDestroyed()) {
+        sender.send('handled-page:status', { ready: true });
+      }
+
+      handledBrowserWindow.on('closed', () => {
+        handledBrowserWindow = null;
+        playwrightHandledPageData = null;
+        if (networkLoggerHandle) {
+          networkLoggerHandle.stop();
+          networkLoggerHandle = null;
+        }
+        if (consoleLoggerHandle) {
+          consoleLoggerHandle.stop();
+          consoleLoggerHandle = null;
+        }
+        if (!sender.isDestroyed()) {
+          sender.send('handled-page:status', { ready: false });
+        }
+      });
     },
   );
 
@@ -153,9 +194,15 @@ app.whenReady().then(async () => {
         networkLoggerHandle.stop();
         networkLoggerHandle = null;
       }
+      const sender = event.sender;
       networkLoggerHandle = await attachCDPNetworkLogger(
         page,
         (resourceTypes as any) ?? ['All'],
+        (line) => {
+          if (!sender.isDestroyed()) {
+            sender.send('logger:line', { source: 'network', line });
+          }
+        },
       );
     },
   );
@@ -167,6 +214,34 @@ app.whenReady().then(async () => {
       networkLoggerHandle = null;
     } else {
       console.log('No active network logger');
+    }
+  });
+
+  ipcMain.on('start-console-logging', (event: Electron.IpcMainEvent) => {
+    const page = playwrightHandledPageData?.handledPage ?? toolPage;
+    if (!page) {
+      console.log('No page available — run playwright or open a tab first');
+      return;
+    }
+    if (consoleLoggerHandle) {
+      consoleLoggerHandle.stop();
+      consoleLoggerHandle = null;
+    }
+    const sender = event.sender;
+    consoleLoggerHandle = attachConsoleLogger(page, (line) => {
+      if (!sender.isDestroyed()) {
+        sender.send('logger:line', { source: 'console', line });
+      }
+    });
+  });
+
+  ipcMain.on('stop-console-logging', () => {
+    if (consoleLoggerHandle) {
+      consoleLoggerHandle.stop();
+      console.log('Console logging stopped');
+      consoleLoggerHandle = null;
+    } else {
+      console.log('No active console logger');
     }
   });
 

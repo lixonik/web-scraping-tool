@@ -2,50 +2,110 @@
   <nz-divider nzText="Browser" nzOrientation="left"></nz-divider>
 
   <div class="section">
-    <button nz-button nzType="primary" (click)="runPlaywright()">
-      Run Playwright
-    </button>
-    <nz-input-search
-      nzSearchButton
-      nzEnterButton="Open"
-      (nzSearch)="onOpen($event)"
+    <input
+      nz-input
+      class="grow-input"
+      [ngModel]="linkForSecondTab()"
+      (ngModelChange)="linkForSecondTab.set($event)"
+      (keydown.enter)="onOpen()"
+      placeholder="URL to open in new tab (http:// or https://)"
+    />
+    <span
+      class="tooltip-wrap"
+      nz-tooltip
+      [nzTooltipTitle]="!isValidUrl ? 'Enter a valid http(s) URL' : ''"
     >
-      <input
-        nz-input
-        [(ngModel)]="linkForSecondTab"
-        placeholder="URL to open in new tab"
-      />
-    </nz-input-search>
+      <button
+        nz-button
+        nzType="primary"
+        [disabled]="!isValidUrl"
+        (click)="onOpen()"
+      >
+        Open
+      </button>
+    </span>
   </div>
 
   <nz-divider nzText="Element" nzOrientation="left"></nz-divider>
 
   <div class="section">
-    <nz-input-search
-      nzSearchButton
-      nzEnterButton="Locate"
-      (nzSearch)="onSendLocator($event)"
+    <span
+      class="tooltip-wrap grow-input"
+      nz-tooltip
+      [nzTooltipTitle]="!isHandledPageReady ? openHandledWindowHint : ''"
     >
-      <input nz-input placeholder="CSS locator" />
-    </nz-input-search>
+      <input
+        nz-input
+        [(ngModel)]="locatorValue"
+        (keydown.enter)="onSendLocator()"
+        [disabled]="!isHandledPageReady"
+        placeholder="CSS locator"
+      />
+    </span>
+    <span
+      class="tooltip-wrap"
+      nz-tooltip
+      [nzTooltipTitle]="
+        !isHandledPageReady
+          ? openHandledWindowHint
+          : !locatorValue.trim()
+            ? 'Enter a CSS locator'
+            : ''
+      "
+    >
+      <button
+        nz-button
+        nzType="primary"
+        [disabled]="!canLocate"
+        (click)="onSendLocator()"
+      >
+        Locate
+      </button>
+    </span>
   </div>
 
   <nz-divider nzText="Tools" nzOrientation="left"></nz-divider>
 
   <div class="section">
-    <button nz-button (click)="screen()">Screenshot</button>
-    <button nz-button (click)="testHttpProxy()">Test HTTP Proxy</button>
-    <button
-      nz-button
-      [nzType]="isNetworkLogging ? 'default' : 'primary'"
-      [nzDanger]="isNetworkLogging"
-      (click)="toggleNetworkLogging()"
+    <span
+      class="tooltip-wrap"
+      nz-tooltip
+      [nzTooltipTitle]="!isHandledPageReady ? openHandledWindowHint : ''"
     >
-      {{
-        isNetworkLogging ? 'Stop Network Logging' : 'Start Network Logging'
-      }}
-    </button>
+      <button
+        nz-button
+        [nzType]="isNetworkLogging ? 'default' : 'primary'"
+        [nzDanger]="isNetworkLogging"
+        [disabled]="!isHandledPageReady"
+        (click)="toggleNetworkLogging()"
+      >
+        {{
+          isNetworkLogging ? 'Stop Network Logging' : 'Start Network Logging'
+        }}
+      </button>
+    </span>
+    <span
+      class="tooltip-wrap"
+      nz-tooltip
+      [nzTooltipTitle]="!isHandledPageReady ? openHandledWindowHint : ''"
+    >
+      <button
+        nz-button
+        [nzType]="isConsoleLogging ? 'default' : 'primary'"
+        [nzDanger]="isConsoleLogging"
+        [disabled]="!isHandledPageReady"
+        (click)="toggleConsoleLogging()"
+      >
+        {{
+          isConsoleLogging ? 'Stop Console Logging' : 'Start Console Logging'
+        }}
+      </button>
+    </span>
   </div>
 
-  <!-- <router-outlet></router-outlet> -->
+  <nz-divider nzText="Logs" nzOrientation="left"></nz-divider>
+
+  <div class="section grow">
+    <app-terminal></app-terminal>
+  </div>
 </div>
