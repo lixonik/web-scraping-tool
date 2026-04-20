@@ -8,7 +8,10 @@ import {
   runPlaywrightToolWindow,
 } from './run-playwright';
 import { saveLocatorData } from './save-element';
-import { attachCDPNetworkLogger, NetworkLoggerHandle } from './cdp-network-logger';
+import {
+  attachCDPNetworkLogger,
+  NetworkLoggerHandle,
+} from './cdp-network-logger';
 import { attachConsoleLogger, ConsoleLoggerHandle } from './console-logger';
 import { Browser, Page } from 'playwright-core';
 
@@ -34,13 +37,19 @@ app.commandLine.appendSwitch('remote-debugging-port', String(DEBUG_PORT));
 app.commandLine.appendSwitch('disable-background-networking');
 app.commandLine.appendSwitch('disable-component-update');
 app.commandLine.appendSwitch('disable-default-apps');
-app.commandLine.appendSwitch('disable-features', 'OptimizationHints,Translate,MediaRouter');
+app.commandLine.appendSwitch(
+  'disable-features',
+  'OptimizationHints,Translate,MediaRouter',
+);
 
 // На всякий случай: разрешаем самоподписанные/проблемные сертификаты целевых страниц
-app.on('certificate-error', (event, _webContents, _url, _error, _cert, callback) => {
-  event.preventDefault();
-  callback(true);
-});
+app.on(
+  'certificate-error',
+  (event, _webContents, _url, _error, _cert, callback) => {
+    event.preventDefault();
+    callback(true);
+  },
+);
 
 async function createWin2(url: string) {
   const win2 = new BrowserWindow({
@@ -69,7 +78,7 @@ async function createWindow(): Promise<void> {
     autoHideMenuBar: true,
     // ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      devTools: true,
+      devTools: false, //true,
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
     },
@@ -173,8 +182,8 @@ app.whenReady().then(async () => {
       }
       try {
         const loc = page.locator(locator);
-        loc.highlight();
         const savedDir = await saveLocatorData(loc, locator);
+        loc.highlight();
         console.log('Element saved to:', savedDir);
       } catch (err) {
         console.error('Failed to save locator data:', err);

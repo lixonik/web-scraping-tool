@@ -27,7 +27,8 @@ export function evaluateJsRepresentation(locator: Locator): Promise<Record<strin
         if (val instanceof Node || val instanceof NodeList || val instanceof HTMLCollection) continue;
         if (val instanceof Window) continue;
 
-        if (val === null || val === undefined || typeof val !== 'object') {
+        if (val === null) continue;
+        if (val === undefined || typeof val !== 'object') {
           result[key] = val;
         } else if (Array.isArray(val)) {
           result[key] = val.map((item) =>
@@ -56,11 +57,10 @@ export function evaluateJsRepresentation(locator: Locator): Promise<Record<strin
           for (const k in val) {
             try {
               const v = val[k];
+              if (v === null) continue;
               if (typeof v !== 'function' && typeof v !== 'object') {
                 shallow[k] = v;
-              } else if (v === null) {
-                shallow[k] = null;
-              } else {
+              } else if (typeof v === 'object') {
                 shallow[k] = '[object]';
               }
             } catch { /* skip */ }
