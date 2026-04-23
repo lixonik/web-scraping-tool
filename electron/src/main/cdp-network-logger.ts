@@ -2,6 +2,7 @@ import { Page } from 'playwright-core';
 import { mkdirSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { formatDateLocal, formatDateISO } from './date-utils';
+import { getNetworkLogsDir } from './paths';
 
 export type NetworkResourceType =
   | 'Document'
@@ -20,7 +21,6 @@ export type NetworkResourceType =
 export type LoggableNetworkResourceType = 'All' | NetworkResourceType;
 
 const MAX_BODY_LENGTH = 10_000;
-const LOG_DIR = join(__dirname, '../../../output/logs/network');
 
 export interface NetworkLoggerHandle {
   stop: () => void;
@@ -32,9 +32,10 @@ export async function attachCDPNetworkLogger(
   resourceTypes: LoggableNetworkResourceType[] = ['All'],
   onLog?: (line: string) => void,
 ): Promise<NetworkLoggerHandle> {
-  mkdirSync(LOG_DIR, { recursive: true });
+  const logDir = getNetworkLogsDir();
+  mkdirSync(logDir, { recursive: true });
 
-  const logFilePath = join(LOG_DIR, `${formatDateLocal(new Date())}.log`);
+  const logFilePath = join(logDir, `${formatDateLocal(new Date())}.log`);
 
   const client = await page.context().newCDPSession(page);
   await client.send('Network.enable');

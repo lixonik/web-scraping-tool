@@ -39,6 +39,10 @@
   display: inline-flex;
 }
 
+.push-right {
+  margin-left: auto;
+}
+
 .tooltip-wrap > input[nz-input] {
   width: 100%;
 }

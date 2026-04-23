@@ -4,7 +4,10 @@ import path               from 'node:path'
 import { join }           from 'path'
 
 export async function runDistServer(port: number, dev: boolean) {
-  const root = join(__dirname, '..', '..', 'resources')
+  // Angular 17+ кладёт клиентские бандлы в подпапку `browser/` внутри
+  // --output-path. В prod мы укажем --output-path=electron/resources,
+  // значит index.html лежит в electron/resources/browser/.
+  const root = join(__dirname, '..', '..', 'resources', 'browser')
 
   const MIME = {
     '.html': 'text/html; charset=utf-8',

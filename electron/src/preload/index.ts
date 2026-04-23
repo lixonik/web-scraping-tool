@@ -2,34 +2,31 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
 
+// Унифицированный тип ответа для операций, возвращающих success/error.
+type OpResult<T = unknown> = { ok: boolean; message?: string } & T;
+
 // Custom APIs for renderer
 const api = {
   runPl: () => {
-    // для асинхронных вызовов с ответом
-    // await ipcRenderer.invoke('run-pl', args)
     ipcRenderer.send('run-pl');
   },
-  openNewTab: (url: string) => {
-    ipcRenderer.send('open-new-tab', url);
-  },
-  onSendLocator: (locator: string) => {
-    ipcRenderer.send('on-send-locator', locator)
-  },
+  openNewTab: (url: string): Promise<OpResult> =>
+    ipcRenderer.invoke('open-new-tab', url),
+  onSendLocator: (locator: string): Promise<OpResult<{ path?: string }>> =>
+    ipcRenderer.invoke('on-send-locator', locator),
   fetchLocalHost: () => {
-    ipcRenderer.send('fetch-local-host')
+    ipcRenderer.send('fetch-local-host');
   },
-  startNetworkLogging: (resourceTypes?: string[]) => {
-    ipcRenderer.send('start-network-logging', resourceTypes);
-  },
-  stopNetworkLogging: () => {
-    ipcRenderer.send('stop-network-logging');
-  },
-  startConsoleLogging: () => {
-    ipcRenderer.send('start-console-logging');
-  },
-  stopConsoleLogging: () => {
-    ipcRenderer.send('stop-console-logging');
-  },
+  startNetworkLogging: (resourceTypes?: string[]): Promise<OpResult<{ logFilePath?: string }>> =>
+    ipcRenderer.invoke('start-network-logging', resourceTypes),
+  stopNetworkLogging: (): Promise<OpResult<{ logFilePath?: string }>> =>
+    ipcRenderer.invoke('stop-network-logging'),
+  startConsoleLogging: (): Promise<OpResult<{ logFilePath?: string }>> =>
+    ipcRenderer.invoke('start-console-logging'),
+  stopConsoleLogging: (): Promise<OpResult<{ logFilePath?: string }>> =>
+    ipcRenderer.invoke('stop-console-logging'),
+  openOutputFolder: (): Promise<OpResult<{ path?: string }>> =>
+    ipcRenderer.invoke('open-output-folder'),
   onLoggerLine: (
     cb: (data: { source: 'network' | 'console'; line: string }) => void,
   ) => {
@@ -48,9 +45,6 @@ const api = {
   },
 } satisfies Window['api'];
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI);

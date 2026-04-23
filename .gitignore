@@ -7,6 +7,7 @@
 /bazel-out
 scenario/dist/**
 /scenario/ci-dist/**
+/electron/resources/**
 
 # Node
 /node_modules

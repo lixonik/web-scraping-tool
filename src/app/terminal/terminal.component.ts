@@ -14,6 +14,7 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { TERMINAL_TEMPLATE_VARIABLES } from './terminal.constants';
 
 type LogSource = 'network' | 'console';
 
@@ -32,6 +33,8 @@ type LogSource = 'network' | 'console';
 })
 export class TerminalComponent implements AfterViewInit, OnDestroy {
   @ViewChild('host', { static: true }) hostRef!: ElementRef<HTMLDivElement>;
+
+  protected readonly templateVariables = TERMINAL_TEMPLATE_VARIABLES;
 
   showNetwork = true;
   showConsole = true;
@@ -64,13 +67,18 @@ export class TerminalComponent implements AfterViewInit, OnDestroy {
 
       window.addEventListener('resize', this.windowResizeHandler);
 
-      this.terminal.writeln('\x1b[90m[terminal ready]\x1b[0m');
+      this.terminal.writeln(
+        `\x1b[90m${TERMINAL_TEMPLATE_VARIABLES.banners.ready}\x1b[0m`,
+      );
 
       this.unsubscribe = window.api.onLoggerLine(({ source, line }) => {
         if (source === 'network' && !this.showNetwork) return;
         if (source === 'console' && !this.showConsole) return;
         const color = source === 'network' ? '\x1b[36m' : '\x1b[33m';
-        const tag = source === 'network' ? 'NET' : 'CON';
+        const tag =
+          source === 'network'
+            ? TERMINAL_TEMPLATE_VARIABLES.sourceTags.network
+            : TERMINAL_TEMPLATE_VARIABLES.sourceTags.console;
         this.terminal?.writeln(`${color}[${tag}]\x1b[0m ${line}`);
       });
     });

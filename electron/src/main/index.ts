@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
 import { join } from 'path';
+import { appendFileSync, mkdirSync } from 'fs';
 import { runDistServer } from './run-dist-server';
 import waitOn from 'wait-on';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
@@ -8,6 +9,7 @@ import {
   runPlaywrightToolWindow,
 } from './run-playwright';
 import { saveLocatorData } from './save-element';
+import { getOutputRoot } from './paths';
 import {
   attachCDPNetworkLogger,
   NetworkLoggerHandle,
@@ -26,6 +28,37 @@ let consoleLoggerHandle: ConsoleLoggerHandle | null = null;
 
 const distServerPort = 3001;
 const distServerUrl = `http://localhost:${distServerPort}`;
+
+// Фиксируем имя приложения до первого обращения к app.getPath(...) — от него
+// зависит имя каталога в %APPDATA% (userData/logs). Без этого в dev-режиме
+// логи уйдут в %APPDATA%\Electron\... вместо %APPDATA%\WebScrapingTool\...
+app.setName('WebScrapingTool');
+
+// ==== Диагностический лог главного процесса ====
+// У GUI-приложения на Windows нет видимого stderr; при падениях в prod-сборке
+// без этого лога диагностика невозможна. Пишем startup-события и необработанные
+// ошибки в %APPDATA%\WebScrapingTool\logs\startup.log.
+function logStartup(message: string): void {
+  try {
+    const dir = join(app.getPath('logs'));
+    mkdirSync(dir, { recursive: true });
+    appendFileSync(join(dir, 'startup.log'), `[${new Date().toISOString()}] ${message}\n`);
+  } catch {
+    /* ignore — логирование не должно мешать запуску */
+  }
+}
+
+process.on('uncaughtException', (err) => {
+  logStartup(`uncaughtException: ${err?.stack || err}`);
+  try {
+    dialog.showErrorBox('WebScrapingTool — ошибка запуска', String(err?.stack || err));
+  } catch { /* dialog может быть недоступен до ready */ }
+});
+process.on('unhandledRejection', (reason) => {
+  logStartup(`unhandledRejection: ${(reason as Error)?.stack || String(reason)}`);
+});
+
+logStartup(`main started, __dirname=${__dirname}, isPackaged=${app.isPackaged}`);
 
 const DEBUG_PORT = 9222;
 // running browser args
@@ -65,6 +98,20 @@ async function createWin2(url: string) {
     },
   });
 
+  // optimizer.watchWindowShortcuts в prod-режиме принудительно блокирует F12
+  // и Ctrl+R. Для управляемого окна DevTools нужны — вешаем свой обработчик
+  // F12 первым, прежде чем optimizer успеет отменить событие.
+  win2.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.code === 'F12') {
+      if (win2.webContents.isDevToolsOpened()) {
+        win2.webContents.closeDevTools();
+      } else {
+        win2.webContents.openDevTools({ mode: 'undocked' });
+      }
+      event.preventDefault();
+    }
+  });
+
   await win2.loadURL(url);
 
   return win2;
@@ -72,20 +119,47 @@ async function createWin2(url: string) {
 
 async function createWindow(): Promise<void> {
   const mainWindow = new BrowserWindow({
+    title: 'WebScrapingTool',
     width: 900,
     height: 670,
     show: true,
     autoHideMenuBar: true,
     // ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      devTools: false, //true,
+      devTools: true,
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
+      backgroundThrottling: false,
     },
   });
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
+  });
+
+  // Закрытие управляющего окна трактуем как выход из приложения:
+  // гасим активные логгеры, закрываем управляемое окно Electron и
+  // связанный с ним браузер Playwright, затем выходим из приложения.
+  mainWindow.on('closed', () => {
+    if (networkLoggerHandle) {
+      networkLoggerHandle.stop();
+      networkLoggerHandle = null;
+    }
+    if (consoleLoggerHandle) {
+      consoleLoggerHandle.stop();
+      consoleLoggerHandle = null;
+    }
+    if (handledBrowserWindow && !handledBrowserWindow.isDestroyed()) {
+      handledBrowserWindow.close();
+    }
+    handledBrowserWindow = null;
+    if (playwrightHandledPageData) {
+      // browser.close() асинхронный, но дожидаться его до app.quit() не требуется
+      // — electron-builder/Chromium корректно завершат подпроцессы.
+      playwrightHandledPageData.browser.close().catch(() => { /* ignore */ });
+      playwrightHandledPageData = null;
+    }
+    app.quit();
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -95,21 +169,50 @@ async function createWindow(): Promise<void> {
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
-  if (is.dev) {
-    await mainWindow.loadURL(`http://localhost:4200`);
-  } else {
-    await mainWindow.loadURL(distServerUrl);
+  const targetUrl = is.dev ? `http://localhost:4200` : distServerUrl;
+  logStartup(`mainWindow.loadURL(${targetUrl})`);
+  try {
+    await mainWindow.loadURL(targetUrl);
+    logStartup('loadURL OK');
+  } catch (e) {
+    logStartup(`loadURL FAILED: ${(e as Error)?.stack || e}`);
   }
-  mainWindow.webContents.openDevTools();
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    logStartup(`did-fail-load: code=${code}, desc=${desc}, url=${url}`);
+    // Показать окно с диагностикой, чтобы пользователь не видел «пустой» процесс
+    mainWindow.loadURL(
+      'data:text/html;charset=utf-8,' +
+        encodeURIComponent(
+          `<html><body style="font:14px system-ui;padding:24px">
+           <h2>Ошибка загрузки UI</h2>
+           <p>Код: ${code}</p><p>Описание: ${desc}</p><p>URL: ${url}</p>
+           <p>См. %APPDATA%\\WebScrapingTool\\logs\\startup.log</p>
+           </body></html>`,
+        ),
+    );
+  });
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  await runDistServer(distServerPort, is.dev);
+  logStartup(`whenReady, is.dev=${is.dev}, resources dir check=${join(__dirname, '..', '..', 'resources')}`);
+  try {
+    await runDistServer(distServerPort, is.dev);
+    logStartup('runDistServer: listen OK');
+  } catch (e) {
+    logStartup(`runDistServer FAILED: ${(e as Error)?.stack || e}`);
+    throw e;
+  }
 
-  await waitOn({ resources: [distServerUrl] });
+  try {
+    await waitOn({ resources: [distServerUrl], timeout: 10000 });
+    logStartup('waitOn OK');
+  } catch (e) {
+    logStartup(`waitOn FAILED: ${(e as Error)?.stack || e}`);
+    throw e;
+  }
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
 
@@ -129,9 +232,9 @@ app.whenReady().then(async () => {
     toolPage = await runPlaywrightToolWindow();
   });
 
-  ipcMain.on(
+  ipcMain.handle(
     'open-new-tab',
-    async (event: Electron.IpcMainEvent, url: string) => {
+    async (event: Electron.IpcMainInvokeEvent, url: string): Promise<{ ok: boolean; message?: string }> => {
       if (networkLoggerHandle) {
         networkLoggerHandle.stop();
         networkLoggerHandle = null;
@@ -143,11 +246,25 @@ app.whenReady().then(async () => {
       if (handledBrowserWindow !== null) {
         handledBrowserWindow.close();
       }
-      handledBrowserWindow = await createWin2(url);
+      try {
+        handledBrowserWindow = await createWin2(url);
+        logStartup('createWin2 OK');
+      } catch (e) {
+        const msg = (e as Error)?.message || String(e);
+        logStartup(`createWin2 FAILED: ${(e as Error)?.stack || e}`);
+        return { ok: false, message: `Failed to open window: ${msg}` };
+      }
       if (playwrightHandledPageData !== null) {
         playwrightHandledPageData.browser.close();
       }
-      playwrightHandledPageData = await runPlaywrightHandledPageData(url);
+      try {
+        playwrightHandledPageData = await runPlaywrightHandledPageData(url);
+        logStartup('runPlaywrightHandledPageData OK');
+      } catch (e) {
+        const msg = (e as Error)?.message || String(e);
+        logStartup(`runPlaywrightHandledPageData FAILED: ${(e as Error)?.stack || e}`);
+        return { ok: false, message: `Failed to attach Playwright: ${msg}` };
+      }
 
       const sender = event.sender;
       if (!sender.isDestroyed()) {
@@ -169,92 +286,129 @@ app.whenReady().then(async () => {
           sender.send('handled-page:status', { ready: false });
         }
       });
+
+      return { ok: true };
     },
   );
 
-  ipcMain.on(
+  ipcMain.handle(
     'on-send-locator',
-    async (event: Electron.IpcMainEvent, locator: string) => {
+    async (_event: Electron.IpcMainInvokeEvent, locator: string): Promise<{ ok: boolean; message?: string; path?: string }> => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
-        console.log('No page available — run playwright or open a tab first');
-        return;
+        return { ok: false, message: 'No page available — open a tab first' };
       }
       try {
         const loc = page.locator(locator);
         const savedDir = await saveLocatorData(loc, locator);
-        loc.highlight();
-        console.log('Element saved to:', savedDir);
+        loc.highlight().catch(() => { /* highlight is best-effort */ });
+        return { ok: true, path: savedDir };
       } catch (err) {
-        console.error('Failed to save locator data:', err);
+        const msg = (err as Error)?.message || String(err);
+        return { ok: false, message: msg };
       }
     },
   );
 
-  ipcMain.on(
+  ipcMain.handle(
     'start-network-logging',
-    async (event: Electron.IpcMainEvent, resourceTypes?: string[]) => {
+    async (event: Electron.IpcMainInvokeEvent, resourceTypes?: string[]): Promise<{ ok: boolean; message?: string; logFilePath?: string }> => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
-        console.log('No page available — run playwright or open a tab first');
-        return;
+        return { ok: false, message: 'No page available — open a tab first' };
       }
       if (networkLoggerHandle) {
         networkLoggerHandle.stop();
         networkLoggerHandle = null;
       }
       const sender = event.sender;
-      networkLoggerHandle = await attachCDPNetworkLogger(
-        page,
-        (resourceTypes as any) ?? ['All'],
-        (line) => {
-          if (!sender.isDestroyed()) {
-            sender.send('logger:line', { source: 'network', line });
-          }
-        },
-      );
+      try {
+        networkLoggerHandle = await attachCDPNetworkLogger(
+          page,
+          (resourceTypes as any) ?? ['All'],
+          (line) => {
+            if (!sender.isDestroyed()) {
+              sender.send('logger:line', { source: 'network', line });
+            }
+          },
+        );
+        return { ok: true, logFilePath: networkLoggerHandle.logFilePath };
+      } catch (err) {
+        const msg = (err as Error)?.message || String(err);
+        return { ok: false, message: msg };
+      }
     },
   );
 
-  ipcMain.on('stop-network-logging', () => {
+  ipcMain.handle('stop-network-logging', (): { ok: boolean; message?: string; logFilePath?: string } => {
     if (networkLoggerHandle) {
+      const path = networkLoggerHandle.logFilePath;
       networkLoggerHandle.stop();
-      console.log('Network logging stopped');
       networkLoggerHandle = null;
-    } else {
-      console.log('No active network logger');
+      return { ok: true, logFilePath: path };
     }
+    return { ok: false, message: 'No active network logger' };
   });
 
-  ipcMain.on('start-console-logging', (event: Electron.IpcMainEvent) => {
-    const page = playwrightHandledPageData?.handledPage ?? toolPage;
-    if (!page) {
-      console.log('No page available — run playwright or open a tab first');
-      return;
-    }
-    if (consoleLoggerHandle) {
-      consoleLoggerHandle.stop();
-      consoleLoggerHandle = null;
-    }
-    const sender = event.sender;
-    consoleLoggerHandle = attachConsoleLogger(page, (line) => {
-      if (!sender.isDestroyed()) {
-        sender.send('logger:line', { source: 'console', line });
+  ipcMain.handle(
+    'start-console-logging',
+    (event: Electron.IpcMainInvokeEvent): { ok: boolean; message?: string; logFilePath?: string } => {
+      const page = playwrightHandledPageData?.handledPage ?? toolPage;
+      if (!page) {
+        return { ok: false, message: 'No page available — open a tab first' };
       }
-    });
+      if (consoleLoggerHandle) {
+        consoleLoggerHandle.stop();
+        consoleLoggerHandle = null;
+      }
+      const sender = event.sender;
+      try {
+        consoleLoggerHandle = attachConsoleLogger(page, (line) => {
+          if (!sender.isDestroyed()) {
+            sender.send('logger:line', { source: 'console', line });
+          }
+        });
+        return { ok: true, logFilePath: consoleLoggerHandle.logFilePath };
+      } catch (err) {
+        const msg = (err as Error)?.message || String(err);
+        return { ok: false, message: msg };
+      }
+    },
+  );
+
+  ipcMain.handle('stop-console-logging', (): { ok: boolean; message?: string; logFilePath?: string } => {
+    if (consoleLoggerHandle) {
+      const path = consoleLoggerHandle.logFilePath;
+      consoleLoggerHandle.stop();
+      consoleLoggerHandle = null;
+      return { ok: true, logFilePath: path };
+    }
+    return { ok: false, message: 'No active console logger' };
   });
 
-  ipcMain.on('stop-console-logging', () => {
-    if (consoleLoggerHandle) {
-      consoleLoggerHandle.stop();
-      console.log('Console logging stopped');
-      consoleLoggerHandle = null;
-    } else {
-      console.log('No active console logger');
+  ipcMain.handle('open-output-folder', async (): Promise<{ ok: boolean; message?: string; path?: string }> => {
+    const root = getOutputRoot();
+    try {
+      mkdirSync(root, { recursive: true });
+      const errMsg = await shell.openPath(root);
+      if (errMsg) {
+        return { ok: false, message: errMsg, path: root };
+      }
+      return { ok: true, path: root };
+    } catch (err) {
+      const msg = (err as Error)?.message || String(err);
+      return { ok: false, message: msg, path: root };
     }
   });
 
-  await createWindow();
+  logStartup('about to createWindow()');
+  try {
+    await createWindow();
+    logStartup('createWindow OK');
+  } catch (e) {
+    logStartup(`createWindow FAILED: ${(e as Error)?.stack || e}`);
+    throw e;
+  }
   // await createWin2()
 
   app.on('activate', () => {

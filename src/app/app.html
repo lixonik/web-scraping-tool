@@ -1,5 +1,8 @@
 <div class="panel">
-  <nz-divider nzText="Browser" nzOrientation="left"></nz-divider>
+  <nz-divider
+    [nzText]="templateVariables.dividers.browser"
+    nzOrientation="left"
+  ></nz-divider>
 
   <div class="section">
     <input
@@ -8,12 +11,12 @@
       [ngModel]="linkForSecondTab()"
       (ngModelChange)="linkForSecondTab.set($event)"
       (keydown.enter)="onOpen()"
-      placeholder="URL to open in new tab (http:// or https://)"
+      [placeholder]="templateVariables.placeholders.url"
     />
     <span
       class="tooltip-wrap"
       nz-tooltip
-      [nzTooltipTitle]="!isValidUrl ? 'Enter a valid http(s) URL' : ''"
+      [nzTooltipTitle]="!isValidUrl ? templateVariables.tooltips.invalidUrl : ''"
     >
       <button
         nz-button
@@ -21,25 +24,32 @@
         [disabled]="!isValidUrl"
         (click)="onOpen()"
       >
-        Open
+        {{ templateVariables.buttons.open }}
       </button>
     </span>
   </div>
 
-  <nz-divider nzText="Element" nzOrientation="left"></nz-divider>
+  <nz-divider
+    [nzText]="templateVariables.dividers.element"
+    nzOrientation="left"
+  ></nz-divider>
 
   <div class="section">
     <span
       class="tooltip-wrap grow-input"
       nz-tooltip
-      [nzTooltipTitle]="!isHandledPageReady ? openHandledWindowHint : ''"
+      [nzTooltipTitle]="
+        !isHandledPageReady
+          ? templateVariables.tooltips.openHandledWindowHint
+          : ''
+      "
     >
       <input
         nz-input
         [(ngModel)]="locatorValue"
         (keydown.enter)="onSendLocator()"
         [disabled]="!isHandledPageReady"
-        placeholder="CSS locator"
+        [placeholder]="templateVariables.placeholders.cssLocator"
       />
     </span>
     <span
@@ -47,9 +57,9 @@
       nz-tooltip
       [nzTooltipTitle]="
         !isHandledPageReady
-          ? openHandledWindowHint
+          ? templateVariables.tooltips.openHandledWindowHint
           : !locatorValue.trim()
-            ? 'Enter a CSS locator'
+            ? templateVariables.tooltips.emptyLocator
             : ''
       "
     >
@@ -59,18 +69,25 @@
         [disabled]="!canLocate"
         (click)="onSendLocator()"
       >
-        Locate
+        {{ templateVariables.buttons.locate }}
       </button>
     </span>
   </div>
 
-  <nz-divider nzText="Tools" nzOrientation="left"></nz-divider>
+  <nz-divider
+    [nzText]="templateVariables.dividers.tools"
+    nzOrientation="left"
+  ></nz-divider>
 
   <div class="section">
     <span
       class="tooltip-wrap"
       nz-tooltip
-      [nzTooltipTitle]="!isHandledPageReady ? openHandledWindowHint : ''"
+      [nzTooltipTitle]="
+        !isHandledPageReady
+          ? templateVariables.tooltips.openHandledWindowHint
+          : ''
+      "
     >
       <button
         nz-button
@@ -80,14 +97,20 @@
         (click)="toggleNetworkLogging()"
       >
         {{
-          isNetworkLogging ? 'Stop Network Logging' : 'Start Network Logging'
+          isNetworkLogging
+            ? templateVariables.buttons.stopNetworkLogging
+            : templateVariables.buttons.startNetworkLogging
         }}
       </button>
     </span>
     <span
       class="tooltip-wrap"
       nz-tooltip
-      [nzTooltipTitle]="!isHandledPageReady ? openHandledWindowHint : ''"
+      [nzTooltipTitle]="
+        !isHandledPageReady
+          ? templateVariables.tooltips.openHandledWindowHint
+          : ''
+      "
     >
       <button
         nz-button
@@ -97,13 +120,26 @@
         (click)="toggleConsoleLogging()"
       >
         {{
-          isConsoleLogging ? 'Stop Console Logging' : 'Start Console Logging'
+          isConsoleLogging
+            ? templateVariables.buttons.stopConsoleLogging
+            : templateVariables.buttons.startConsoleLogging
         }}
       </button>
     </span>
+    <button
+      nz-button
+      nzType="default"
+      class="push-right"
+      (click)="openOutputFolder()"
+    >
+      {{ templateVariables.buttons.openOutputFolder }}
+    </button>
   </div>
 
-  <nz-divider nzText="Logs" nzOrientation="left"></nz-divider>
+  <nz-divider
+    [nzText]="templateVariables.dividers.logs"
+    nzOrientation="left"
+  ></nz-divider>
 
   <div class="section grow">
     <app-terminal></app-terminal>

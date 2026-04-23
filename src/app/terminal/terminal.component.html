@@ -1,9 +1,15 @@
 <div class="terminal-wrapper">
   <div class="toolbar">
-    <label nz-checkbox [(ngModel)]="showNetwork">Network</label>
-    <label nz-checkbox [(ngModel)]="showConsole">Console</label>
+    <label nz-checkbox [(ngModel)]="showNetwork">
+      {{ templateVariables.filters.network }}
+    </label>
+    <label nz-checkbox [(ngModel)]="showConsole">
+      {{ templateVariables.filters.console }}
+    </label>
     <span class="spacer"></span>
-    <button nz-button nzSize="small" (click)="clear()">Clear</button>
+    <button nz-button nzSize="small" (click)="clear()">
+      {{ templateVariables.buttons.clear }}
+    </button>
   </div>
   <div #host class="term-host"></div>
 </div>

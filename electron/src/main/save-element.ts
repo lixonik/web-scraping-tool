@@ -5,8 +5,7 @@ import { join } from 'path';
 import { createPdf, setFonts } from 'pdfmake';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { formatDateLocal, formatDateISO } from './date-utils';
-
-const OUTPUT_DIR = join(__dirname, '../../../output/saved_elements');
+import { getSavedElementsDir } from './paths';
 
 export function evaluateJsRepresentation(locator: Locator): Promise<Record<string, unknown>> {
   return locator.evaluate((el) => {
@@ -144,7 +143,7 @@ async function generatePdfReport(
 export async function saveLocatorData(locator: Locator, locatorStr: string): Promise<string> {
   const now = new Date();
   const safeName = locatorStr.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50);
-  const dir = join(OUTPUT_DIR, `${formatDateLocal(now)}_${safeName}`);
+  const dir = join(getSavedElementsDir(), `${formatDateLocal(now)}_${safeName}`);
   await mkdir(dir, { recursive: true });
 
   // 1) HTML

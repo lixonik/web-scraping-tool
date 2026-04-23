@@ -6,6 +6,10 @@
     "start": "vite-node ./scripts/run-dev.ts",
     "angular-serve": "ng serve",
     "build:prod": "ng build",
+    "build:renderer": "ng build --output-path=electron/resources",
+    "build:win": "npm run build:renderer && npm --prefix electron run build:win",
+    "build:mac": "npm run build:renderer && npm --prefix electron run build:mac",
+    "build:linux": "npm run build:renderer && npm --prefix electron run build:linux",
     "vite": "vite",
     "test": "ng test",
     "vite-node": "vite-node"

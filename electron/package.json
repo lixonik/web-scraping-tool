@@ -36,28 +36,5 @@
   },
   "engines": {
     "node": ">=20.19.0"
-  },
-  "build": {
-    "productName": "electron-playwright",
-    "appId": "electron-playwright",
-    "mac": {
-      "target": [
-        "zip"
-      ],
-      "artifactName": "${productName}-Setup-${version}"
-    },
-    "win": {
-      "target": [
-        "zip"
-      ],
-      "artifactName": "${productName}-${version}.${ext}"
-    },
-    "linux": {
-      "category": "Utility",
-      "target": [
-        "tar.gz"
-      ],
-      "artifactName": "${productName}-${version}.${ext}"
-    }
   }
 }

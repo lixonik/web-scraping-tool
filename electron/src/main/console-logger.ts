@@ -2,8 +2,7 @@ import { Page, ConsoleMessage } from 'playwright-core';
 import { mkdirSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { formatDateLocal, formatDateISO } from './date-utils';
-
-const LOG_DIR = join(__dirname, '../../../output/logs/console');
+import { getConsoleLogsDir } from './paths';
 
 export interface ConsoleLoggerHandle {
   stop: () => void;
@@ -14,9 +13,10 @@ export function attachConsoleLogger(
   page: Page,
   onLog?: (line: string) => void,
 ): ConsoleLoggerHandle {
-  mkdirSync(LOG_DIR, { recursive: true });
+  const logDir = getConsoleLogsDir();
+  mkdirSync(logDir, { recursive: true });
 
-  const logFilePath = join(LOG_DIR, `${formatDateLocal(new Date())}.log`);
+  const logFilePath = join(logDir, `${formatDateLocal(new Date())}.log`);
 
   let stopped = false;
 
