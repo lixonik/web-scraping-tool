@@ -2,7 +2,7 @@
 
 A desktop application for interactive web scraping. It pairs a **control window** with a **handled window** driven by Playwright over the Chrome DevTools Protocol (CDP), letting the user navigate a real site, grab DOM elements as HTML / JSON / screenshots / PDF, and record network and console activity to timestamped log files.
 
-*(Русская версия ниже -- see [Русский](#русский).)*
+_(Русская версия ниже -- see [Русский](#русский).)_
 
 ---
 
@@ -197,8 +197,8 @@ Artifacts appear in `electron/dist/`.
 │              │                                   │                   │
 │  ┌───────────▼────────────────────┐ ┌────────────▼──────────────┐    │
 │  │ xterm.js terminal (live logs)  │ │ Handled BrowserWindow     │    │
-│  │ Notifications (ng-zorro)       │ │  -- запущен как Chromium   │    │
-│  │ Browser / Element / Tools      │ │  -- с включённым CDP       │    │
+│  │ Notifications (ng-zorro)       │ │  - запущен как Chromium   │    │
+│  │ Browser / Element / Tools      │ │  - с включённым CDP       │    │
 │  └────────────────────────────────┘ └───────────────────────────┘    │
 │                                                                      │
 │  Встроенный HTTP-сервер раздаёт Angular-бандл в production           │
