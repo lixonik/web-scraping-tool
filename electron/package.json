@@ -1,9 +1,13 @@
 {
   "name": "electron-app",
   "version": "1.0.0",
-  "description": "An Electron application with Vue and TypeScript",
+  "description": "WebScrapingTool -- interactive web scraping desktop app",
   "main": "out/main/index.js",
-  "author": "example.com",
+  "author": {
+    "name": "lixonik",
+    "url": "https://github.com/lixonik"
+  },
+  "homepage": "https://github.com/lixonik/web-scraping-tool",
   "scripts": {
     "format": "prettier --write ",
     "lint": "eslint  --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",
