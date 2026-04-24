@@ -51,8 +51,8 @@ All output lives under a single root folder:
 │              │                                   │                   │
 │  ┌───────────▼────────────────────┐ ┌────────────▼──────────────┐    │
 │  │ xterm.js terminal (live logs)  │ │ Handled BrowserWindow     │    │
-│  │ Notifications (ng-zorro)       │ │  -- launched as Chromium   │    │
-│  │ Browser / Element / Tools      │ │  -- CDP enabled            │    │
+│  │ Notifications (ng-zorro)       │ │  - launched as Chromium   │    │
+│  │ Browser / Element / Tools      │ │  - CDP enabled            │    │
 │  └────────────────────────────────┘ └───────────────────────────┘    │
 │                                                                      │
 │  Static HTTP server serves Angular bundle in production              │
