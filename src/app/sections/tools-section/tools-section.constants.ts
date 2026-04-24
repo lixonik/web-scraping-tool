@@ -1,20 +1,24 @@
 /**
- * Заголовки и фолбэк-сообщения для `NzNotificationService` на
- * компоненте `App`. Выделены в отдельную константу (и отдельный файл),
- * т.к. шаблоны интерфейса и текст уведомлений — независимые контексты
- * локализации/правок.
+ * Тексты шаблона `tools-section.html`.
  */
-export const NOTIFICATION_MESSAGES = {
-  handledWindow: {
-    title: 'Handled window',
-    openedPrefix: 'Opened',
-    fallbackFailed: 'Failed to open',
+export const TOOLS_SECTION_TEMPLATE_VARIABLES = {
+  tooltips: {
+    openHandledWindowHint: 'Open handled window first',
   },
-  elementSave: {
-    successTitle: 'Element saved',
-    errorTitle: 'Save failed',
-    fallbackError: 'Unknown error',
+  buttons: {
+    startNetworkLogging: 'Start Network Logging',
+    stopNetworkLogging: 'Stop Network Logging',
+    startConsoleLogging: 'Start Console Logging',
+    stopConsoleLogging: 'Stop Console Logging',
+    openOutputFolder: 'Open Output Folder',
   },
+} as const;
+
+/**
+ * Заголовки и фолбэк-сообщения для `NzNotificationService`
+ * на компоненте `ToolsSection`.
+ */
+export const TOOLS_SECTION_NOTIFICATION_MESSAGES = {
   networkLogging: {
     startedTitle: 'Network logging started',
     stoppedTitle: 'Network logging stopped',

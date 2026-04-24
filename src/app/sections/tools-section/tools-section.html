@@ -1,0 +1,56 @@
+<div class="section">
+  <span
+    class="tooltip-wrap"
+    nz-tooltip
+    [nzTooltipTitle]="
+      !isHandledPageReady
+        ? templateVariables.tooltips.openHandledWindowHint
+        : ''
+    "
+  >
+    <button
+      nz-button
+      [nzType]="isNetworkLogging ? 'default' : 'primary'"
+      [nzDanger]="isNetworkLogging"
+      [disabled]="!isHandledPageReady"
+      (click)="toggleNetworkLogging()"
+    >
+      {{
+        isNetworkLogging
+          ? templateVariables.buttons.stopNetworkLogging
+          : templateVariables.buttons.startNetworkLogging
+      }}
+    </button>
+  </span>
+  <span
+    class="tooltip-wrap"
+    nz-tooltip
+    [nzTooltipTitle]="
+      !isHandledPageReady
+        ? templateVariables.tooltips.openHandledWindowHint
+        : ''
+    "
+  >
+    <button
+      nz-button
+      [nzType]="isConsoleLogging ? 'default' : 'primary'"
+      [nzDanger]="isConsoleLogging"
+      [disabled]="!isHandledPageReady"
+      (click)="toggleConsoleLogging()"
+    >
+      {{
+        isConsoleLogging
+          ? templateVariables.buttons.stopConsoleLogging
+          : templateVariables.buttons.startConsoleLogging
+      }}
+    </button>
+  </span>
+  <button
+    nz-button
+    nzType="default"
+    class="push-right"
+    (click)="openOutputFolder()"
+  >
+    {{ templateVariables.buttons.openOutputFolder }}
+  </button>
+</div>

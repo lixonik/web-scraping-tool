@@ -14,35 +14,13 @@
   min-height: 0;
   justify-content: flex-start;
   max-width: 100%;
-}
-
-.section {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   gap: 12px;
 }
 
 .section.grow {
   flex: 1;
   min-height: 0;
+  display: flex;
   flex-wrap: nowrap;
   align-items: stretch;
-}
-
-.section nz-input-search,
-.section .grow-input {
-  flex: 1 1 250px;
-}
-
-.tooltip-wrap {
-  display: inline-flex;
-}
-
-.push-right {
-  margin-left: auto;
-}
-
-.tooltip-wrap > input[nz-input] {
-  width: 100%;
 }

@@ -1,0 +1,22 @@
+:host {
+  display: block;
+}
+
+.section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.section .grow-input {
+  flex: 1 1 250px;
+}
+
+.tooltip-wrap {
+  display: inline-flex;
+}
+
+.tooltip-wrap > input[nz-input] {
+  width: 100%;
+}

@@ -1,0 +1,39 @@
+<div class="section">
+  <span
+    class="tooltip-wrap grow-input"
+    nz-tooltip
+    [nzTooltipTitle]="
+      !isHandledPageReady
+        ? templateVariables.tooltips.openHandledWindowHint
+        : ''
+    "
+  >
+    <input
+      nz-input
+      [(ngModel)]="locatorValue"
+      (keydown.enter)="onSendLocator()"
+      [disabled]="!isHandledPageReady"
+      [placeholder]="templateVariables.placeholders.cssLocator"
+    />
+  </span>
+  <span
+    class="tooltip-wrap"
+    nz-tooltip
+    [nzTooltipTitle]="
+      !isHandledPageReady
+        ? templateVariables.tooltips.openHandledWindowHint
+        : !locatorValue.trim()
+          ? templateVariables.tooltips.emptyLocator
+          : ''
+    "
+  >
+    <button
+      nz-button
+      nzType="primary"
+      [disabled]="!canLocate"
+      (click)="onSendLocator()"
+    >
+      {{ templateVariables.buttons.locate }}
+    </button>
+  </span>
+</div>

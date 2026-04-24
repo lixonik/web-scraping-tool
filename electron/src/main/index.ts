@@ -37,12 +37,15 @@ app.setName('WebScrapingTool');
 // ==== Диагностический лог главного процесса ====
 // У GUI-приложения на Windows нет видимого stderr; при падениях в prod-сборке
 // без этого лога диагностика невозможна. Пишем startup-события и необработанные
-// ошибки в %APPDATA%\WebScrapingTool\logs\startup.log.
+// ошибки в WebScrapingTool\logs\startup.log.
 function logStartup(message: string): void {
   try {
     const dir = join(app.getPath('logs'));
     mkdirSync(dir, { recursive: true });
-    appendFileSync(join(dir, 'startup.log'), `[${new Date().toISOString()}] ${message}\n`);
+    appendFileSync(
+      join(dir, 'startup.log'),
+      `[${new Date().toISOString()}] ${message}\n`,
+    );
   } catch {
     /* ignore — логирование не должно мешать запуску */
   }
@@ -51,14 +54,23 @@ function logStartup(message: string): void {
 process.on('uncaughtException', (err) => {
   logStartup(`uncaughtException: ${err?.stack || err}`);
   try {
-    dialog.showErrorBox('WebScrapingTool — ошибка запуска', String(err?.stack || err));
-  } catch { /* dialog может быть недоступен до ready */ }
+    dialog.showErrorBox(
+      'WebScrapingTool — ошибка запуска',
+      String(err?.stack || err),
+    );
+  } catch {
+    /* dialog может быть недоступен до ready */
+  }
 });
 process.on('unhandledRejection', (reason) => {
-  logStartup(`unhandledRejection: ${(reason as Error)?.stack || String(reason)}`);
+  logStartup(
+    `unhandledRejection: ${(reason as Error)?.stack || String(reason)}`,
+  );
 });
 
-logStartup(`main started, __dirname=${__dirname}, isPackaged=${app.isPackaged}`);
+logStartup(
+  `main started, __dirname=${__dirname}, isPackaged=${app.isPackaged}`,
+);
 
 const DEBUG_PORT = 9222;
 // running browser args
@@ -156,7 +168,9 @@ async function createWindow(): Promise<void> {
     if (playwrightHandledPageData) {
       // browser.close() асинхронный, но дожидаться его до app.quit() не требуется
       // — electron-builder/Chromium корректно завершат подпроцессы.
-      playwrightHandledPageData.browser.close().catch(() => { /* ignore */ });
+      playwrightHandledPageData.browser.close().catch(() => {
+        /* ignore */
+      });
       playwrightHandledPageData = null;
     }
     app.quit();
@@ -186,7 +200,7 @@ async function createWindow(): Promise<void> {
           `<html><body style="font:14px system-ui;padding:24px">
            <h2>Ошибка загрузки UI</h2>
            <p>Код: ${code}</p><p>Описание: ${desc}</p><p>URL: ${url}</p>
-           <p>См. %APPDATA%\\WebScrapingTool\\logs\\startup.log</p>
+           <p>См. WebScrapingTool\\logs\\startup.log</p>
            </body></html>`,
         ),
     );
@@ -197,7 +211,9 @@ async function createWindow(): Promise<void> {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  logStartup(`whenReady, is.dev=${is.dev}, resources dir check=${join(__dirname, '..', '..', 'resources')}`);
+  logStartup(
+    `whenReady, is.dev=${is.dev}, resources dir check=${join(__dirname, '..', '..', 'resources')}`,
+  );
   try {
     await runDistServer(distServerPort, is.dev);
     logStartup('runDistServer: listen OK');
@@ -234,7 +250,10 @@ app.whenReady().then(async () => {
 
   ipcMain.handle(
     'open-new-tab',
-    async (event: Electron.IpcMainInvokeEvent, url: string): Promise<{ ok: boolean; message?: string }> => {
+    async (
+      event: Electron.IpcMainInvokeEvent,
+      url: string,
+    ): Promise<{ ok: boolean; message?: string }> => {
       if (networkLoggerHandle) {
         networkLoggerHandle.stop();
         networkLoggerHandle = null;
@@ -262,7 +281,9 @@ app.whenReady().then(async () => {
         logStartup('runPlaywrightHandledPageData OK');
       } catch (e) {
         const msg = (e as Error)?.message || String(e);
-        logStartup(`runPlaywrightHandledPageData FAILED: ${(e as Error)?.stack || e}`);
+        logStartup(
+          `runPlaywrightHandledPageData FAILED: ${(e as Error)?.stack || e}`,
+        );
         return { ok: false, message: `Failed to attach Playwright: ${msg}` };
       }
 
@@ -293,7 +314,10 @@ app.whenReady().then(async () => {
 
   ipcMain.handle(
     'on-send-locator',
-    async (_event: Electron.IpcMainInvokeEvent, locator: string): Promise<{ ok: boolean; message?: string; path?: string }> => {
+    async (
+      _event: Electron.IpcMainInvokeEvent,
+      locator: string,
+    ): Promise<{ ok: boolean; message?: string; path?: string }> => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
         return { ok: false, message: 'No page available — open a tab first' };
@@ -301,7 +325,6 @@ app.whenReady().then(async () => {
       try {
         const loc = page.locator(locator);
         const savedDir = await saveLocatorData(loc, locator);
-        loc.highlight().catch(() => { /* highlight is best-effort */ });
         return { ok: true, path: savedDir };
       } catch (err) {
         const msg = (err as Error)?.message || String(err);
@@ -312,7 +335,10 @@ app.whenReady().then(async () => {
 
   ipcMain.handle(
     'start-network-logging',
-    async (event: Electron.IpcMainInvokeEvent, resourceTypes?: string[]): Promise<{ ok: boolean; message?: string; logFilePath?: string }> => {
+    async (
+      event: Electron.IpcMainInvokeEvent,
+      resourceTypes?: string[],
+    ): Promise<{ ok: boolean; message?: string; logFilePath?: string }> => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
         return { ok: false, message: 'No page available — open a tab first' };
@@ -340,19 +366,24 @@ app.whenReady().then(async () => {
     },
   );
 
-  ipcMain.handle('stop-network-logging', (): { ok: boolean; message?: string; logFilePath?: string } => {
-    if (networkLoggerHandle) {
-      const path = networkLoggerHandle.logFilePath;
-      networkLoggerHandle.stop();
-      networkLoggerHandle = null;
-      return { ok: true, logFilePath: path };
-    }
-    return { ok: false, message: 'No active network logger' };
-  });
+  ipcMain.handle(
+    'stop-network-logging',
+    (): { ok: boolean; message?: string; logFilePath?: string } => {
+      if (networkLoggerHandle) {
+        const path = networkLoggerHandle.logFilePath;
+        networkLoggerHandle.stop();
+        networkLoggerHandle = null;
+        return { ok: true, logFilePath: path };
+      }
+      return { ok: false, message: 'No active network logger' };
+    },
+  );
 
   ipcMain.handle(
     'start-console-logging',
-    (event: Electron.IpcMainInvokeEvent): { ok: boolean; message?: string; logFilePath?: string } => {
+    (
+      event: Electron.IpcMainInvokeEvent,
+    ): { ok: boolean; message?: string; logFilePath?: string } => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
         return { ok: false, message: 'No page available — open a tab first' };
@@ -376,30 +407,36 @@ app.whenReady().then(async () => {
     },
   );
 
-  ipcMain.handle('stop-console-logging', (): { ok: boolean; message?: string; logFilePath?: string } => {
-    if (consoleLoggerHandle) {
-      const path = consoleLoggerHandle.logFilePath;
-      consoleLoggerHandle.stop();
-      consoleLoggerHandle = null;
-      return { ok: true, logFilePath: path };
-    }
-    return { ok: false, message: 'No active console logger' };
-  });
-
-  ipcMain.handle('open-output-folder', async (): Promise<{ ok: boolean; message?: string; path?: string }> => {
-    const root = getOutputRoot();
-    try {
-      mkdirSync(root, { recursive: true });
-      const errMsg = await shell.openPath(root);
-      if (errMsg) {
-        return { ok: false, message: errMsg, path: root };
+  ipcMain.handle(
+    'stop-console-logging',
+    (): { ok: boolean; message?: string; logFilePath?: string } => {
+      if (consoleLoggerHandle) {
+        const path = consoleLoggerHandle.logFilePath;
+        consoleLoggerHandle.stop();
+        consoleLoggerHandle = null;
+        return { ok: true, logFilePath: path };
       }
-      return { ok: true, path: root };
-    } catch (err) {
-      const msg = (err as Error)?.message || String(err);
-      return { ok: false, message: msg, path: root };
-    }
-  });
+      return { ok: false, message: 'No active console logger' };
+    },
+  );
+
+  ipcMain.handle(
+    'open-output-folder',
+    async (): Promise<{ ok: boolean; message?: string; path?: string }> => {
+      const root = getOutputRoot();
+      try {
+        mkdirSync(root, { recursive: true });
+        const errMsg = await shell.openPath(root);
+        if (errMsg) {
+          return { ok: false, message: errMsg, path: root };
+        }
+        return { ok: true, path: root };
+      } catch (err) {
+        const msg = (err as Error)?.message || String(err);
+        return { ok: false, message: msg, path: root };
+      }
+    },
+  );
 
   logStartup('about to createWindow()');
   try {

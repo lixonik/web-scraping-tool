@@ -3,144 +3,28 @@
     [nzText]="templateVariables.dividers.browser"
     nzOrientation="left"
   ></nz-divider>
-
-  <div class="section">
-    <input
-      nz-input
-      class="grow-input"
-      [ngModel]="linkForSecondTab()"
-      (ngModelChange)="linkForSecondTab.set($event)"
-      (keydown.enter)="onOpen()"
-      [placeholder]="templateVariables.placeholders.url"
-    />
-    <span
-      class="tooltip-wrap"
-      nz-tooltip
-      [nzTooltipTitle]="!isValidUrl ? templateVariables.tooltips.invalidUrl : ''"
-    >
-      <button
-        nz-button
-        nzType="primary"
-        [disabled]="!isValidUrl"
-        (click)="onOpen()"
-      >
-        {{ templateVariables.buttons.open }}
-      </button>
-    </span>
-  </div>
+  <app-browser-section></app-browser-section>
 
   <nz-divider
     [nzText]="templateVariables.dividers.element"
     nzOrientation="left"
   ></nz-divider>
-
-  <div class="section">
-    <span
-      class="tooltip-wrap grow-input"
-      nz-tooltip
-      [nzTooltipTitle]="
-        !isHandledPageReady
-          ? templateVariables.tooltips.openHandledWindowHint
-          : ''
-      "
-    >
-      <input
-        nz-input
-        [(ngModel)]="locatorValue"
-        (keydown.enter)="onSendLocator()"
-        [disabled]="!isHandledPageReady"
-        [placeholder]="templateVariables.placeholders.cssLocator"
-      />
-    </span>
-    <span
-      class="tooltip-wrap"
-      nz-tooltip
-      [nzTooltipTitle]="
-        !isHandledPageReady
-          ? templateVariables.tooltips.openHandledWindowHint
-          : !locatorValue.trim()
-            ? templateVariables.tooltips.emptyLocator
-            : ''
-      "
-    >
-      <button
-        nz-button
-        nzType="primary"
-        [disabled]="!canLocate"
-        (click)="onSendLocator()"
-      >
-        {{ templateVariables.buttons.locate }}
-      </button>
-    </span>
-  </div>
+  <app-element-section
+    [isHandledPageReady]="isHandledPageReady"
+  ></app-element-section>
 
   <nz-divider
     [nzText]="templateVariables.dividers.tools"
     nzOrientation="left"
   ></nz-divider>
-
-  <div class="section">
-    <span
-      class="tooltip-wrap"
-      nz-tooltip
-      [nzTooltipTitle]="
-        !isHandledPageReady
-          ? templateVariables.tooltips.openHandledWindowHint
-          : ''
-      "
-    >
-      <button
-        nz-button
-        [nzType]="isNetworkLogging ? 'default' : 'primary'"
-        [nzDanger]="isNetworkLogging"
-        [disabled]="!isHandledPageReady"
-        (click)="toggleNetworkLogging()"
-      >
-        {{
-          isNetworkLogging
-            ? templateVariables.buttons.stopNetworkLogging
-            : templateVariables.buttons.startNetworkLogging
-        }}
-      </button>
-    </span>
-    <span
-      class="tooltip-wrap"
-      nz-tooltip
-      [nzTooltipTitle]="
-        !isHandledPageReady
-          ? templateVariables.tooltips.openHandledWindowHint
-          : ''
-      "
-    >
-      <button
-        nz-button
-        [nzType]="isConsoleLogging ? 'default' : 'primary'"
-        [nzDanger]="isConsoleLogging"
-        [disabled]="!isHandledPageReady"
-        (click)="toggleConsoleLogging()"
-      >
-        {{
-          isConsoleLogging
-            ? templateVariables.buttons.stopConsoleLogging
-            : templateVariables.buttons.startConsoleLogging
-        }}
-      </button>
-    </span>
-    <button
-      nz-button
-      nzType="default"
-      class="push-right"
-      (click)="openOutputFolder()"
-    >
-      {{ templateVariables.buttons.openOutputFolder }}
-    </button>
-  </div>
+  <app-tools-section
+    [isHandledPageReady]="isHandledPageReady"
+  ></app-tools-section>
 
   <nz-divider
     [nzText]="templateVariables.dividers.logs"
     nzOrientation="left"
   ></nz-divider>
-
   <div class="section grow">
     <app-terminal></app-terminal>
   </div>

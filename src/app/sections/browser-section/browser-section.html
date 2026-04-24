@@ -1,0 +1,24 @@
+<div class="section">
+  <input
+    nz-input
+    class="grow-input"
+    [ngModel]="linkForSecondTab()"
+    (ngModelChange)="linkForSecondTab.set($event)"
+    (keydown.enter)="onOpen()"
+    [placeholder]="templateVariables.placeholders.url"
+  />
+  <span
+    class="tooltip-wrap"
+    nz-tooltip
+    [nzTooltipTitle]="!isValidUrl ? templateVariables.tooltips.invalidUrl : ''"
+  >
+    <button
+      nz-button
+      nzType="primary"
+      [disabled]="!isValidUrl"
+      (click)="onOpen()"
+    >
+      {{ templateVariables.buttons.open }}
+    </button>
+  </span>
+</div>
