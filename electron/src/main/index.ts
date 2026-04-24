@@ -29,7 +29,7 @@ let consoleLoggerHandle: ConsoleLoggerHandle | null = null;
 const distServerPort = 3001;
 const distServerUrl = `http://localhost:${distServerPort}`;
 
-// Фиксируем имя приложения до первого обращения к app.getPath(...) — от него
+// Фиксируем имя приложения до первого обращения к app.getPath(...) -- от него
 // зависит имя каталога в %APPDATA% (userData/logs). Без этого в dev-режиме
 // логи уйдут в %APPDATA%\Electron\... вместо %APPDATA%\WebScrapingTool\...
 app.setName('WebScrapingTool');
@@ -37,7 +37,7 @@ app.setName('WebScrapingTool');
 // ==== Диагностический лог главного процесса ====
 // У GUI-приложения на Windows нет видимого stderr; при падениях в prod-сборке
 // без этого лога диагностика невозможна. Пишем startup-события и необработанные
-// ошибки в WebScrapingTool\logs\startup.log.
+// ошибки в %APPDATA%\WebScrapingTool\logs\startup.log (app.getPath('logs')).
 function logStartup(message: string): void {
   try {
     const dir = join(app.getPath('logs'));
@@ -47,7 +47,7 @@ function logStartup(message: string): void {
       `[${new Date().toISOString()}] ${message}\n`,
     );
   } catch {
-    /* ignore — логирование не должно мешать запуску */
+    /* ignore -- логирование не должно мешать запуску */
   }
 }
 
@@ -55,7 +55,7 @@ process.on('uncaughtException', (err) => {
   logStartup(`uncaughtException: ${err?.stack || err}`);
   try {
     dialog.showErrorBox(
-      'WebScrapingTool — ошибка запуска',
+      'WebScrapingTool -- ошибка запуска',
       String(err?.stack || err),
     );
   } catch {
@@ -77,7 +77,7 @@ const DEBUG_PORT = 9222;
 app.commandLine.appendSwitch('remote-debugging-port', String(DEBUG_PORT));
 
 // Подавляем фоновые HTTPS-запросы Chromium к сервисам Google (component updater,
-// safe browsing, translate и т.п.) — это источник periodic SSL handshake ошибок
+// safe browsing, translate и т.п.) -- это источник periodic SSL handshake ошибок
 // в stderr при запуске, никак не связанный с целевыми страницами.
 app.commandLine.appendSwitch('disable-background-networking');
 app.commandLine.appendSwitch('disable-component-update');
@@ -111,7 +111,7 @@ async function createWin2(url: string) {
   });
 
   // optimizer.watchWindowShortcuts в prod-режиме принудительно блокирует F12
-  // и Ctrl+R. Для управляемого окна DevTools нужны — вешаем свой обработчик
+  // и Ctrl+R. Для управляемого окна DevTools нужны -- вешаем свой обработчик
   // F12 первым, прежде чем optimizer успеет отменить событие.
   win2.webContents.on('before-input-event', (event, input) => {
     if (input.type === 'keyDown' && input.code === 'F12') {
@@ -167,7 +167,7 @@ async function createWindow(): Promise<void> {
     handledBrowserWindow = null;
     if (playwrightHandledPageData) {
       // browser.close() асинхронный, но дожидаться его до app.quit() не требуется
-      // — electron-builder/Chromium корректно завершат подпроцессы.
+      // -- electron-builder/Chromium корректно завершат подпроцессы.
       playwrightHandledPageData.browser.close().catch(() => {
         /* ignore */
       });
@@ -200,7 +200,7 @@ async function createWindow(): Promise<void> {
           `<html><body style="font:14px system-ui;padding:24px">
            <h2>Ошибка загрузки UI</h2>
            <p>Код: ${code}</p><p>Описание: ${desc}</p><p>URL: ${url}</p>
-           <p>См. WebScrapingTool\\logs\\startup.log</p>
+           <p>См. %APPDATA%\\WebScrapingTool\\logs\\startup.log</p>
            </body></html>`,
         ),
     );
@@ -320,7 +320,7 @@ app.whenReady().then(async () => {
     ): Promise<{ ok: boolean; message?: string; path?: string }> => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
-        return { ok: false, message: 'No page available — open a tab first' };
+        return { ok: false, message: 'No page available -- open a tab first' };
       }
       try {
         const loc = page.locator(locator);
@@ -341,7 +341,7 @@ app.whenReady().then(async () => {
     ): Promise<{ ok: boolean; message?: string; logFilePath?: string }> => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
-        return { ok: false, message: 'No page available — open a tab first' };
+        return { ok: false, message: 'No page available -- open a tab first' };
       }
       if (networkLoggerHandle) {
         networkLoggerHandle.stop();
@@ -386,7 +386,7 @@ app.whenReady().then(async () => {
     ): { ok: boolean; message?: string; logFilePath?: string } => {
       const page = playwrightHandledPageData?.handledPage ?? toolPage;
       if (!page) {
-        return { ok: false, message: 'No page available — open a tab first' };
+        return { ok: false, message: 'No page available -- open a tab first' };
       }
       if (consoleLoggerHandle) {
         consoleLoggerHandle.stop();
